@@ -4,8 +4,10 @@ import "./App.css";
 
 const API = (
   import.meta.env.VITE_API_URL ||
-  "http://127.0.0.1:8000"
-).replace(/\/+$/, "");;
+  (import.meta.env.DEV
+    ? "http://127.0.0.1:8000"
+    : "https://cybershield-ai-ia1n.onrender.com")
+).replace(/\/+$/, "");
 
 const menuItems = [
   { id: "dashboard", icon: "▦", label: "Dashboard" },
