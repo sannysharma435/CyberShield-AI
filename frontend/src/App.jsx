@@ -1407,7 +1407,7 @@ function App() {
 
           <textarea
             className="email-input"
-            placeholder="Paste email content here..."
+            placeholder="Enter email"
             value={email}
             onChange={event =>
               setEmail(event.target.value)
