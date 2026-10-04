@@ -959,6 +959,23 @@ function App() {
             "Analysis completed"}
         </div>
 
+        <div className="result-summary">
+          <div className="result-summary-row">
+            <span>Status</span>
+            <strong>{String(status).toUpperCase()}</strong>
+          </div>
+
+          <div className="result-summary-row">
+            <span>Risk Score</span>
+            <strong>{score}/100</strong>
+          </div>
+
+          <div className="result-summary-row">
+            <span>Indicators Detected</span>
+            <strong>{indicators.length}</strong>
+          </div>
+        </div>
+
         {indicators.length > 0 && (
           <div className="indicators">
             <span>
@@ -993,8 +1010,12 @@ function App() {
           <h1>Security Dashboard</h1>
 
           <p>
-            Monitor and protect your digital
-            environment.
+            CyberShield AI helps you analyze URLs, emails, files,
+            passwords, and privacy risks from one unified security
+            dashboard. It provides preliminary security analysis,
+            risk assessments, scan history, reports, and media
+            security tools to help identify potentially suspicious
+            activity.
           </p>
         </div>
 
@@ -1268,7 +1289,7 @@ function App() {
             ↗
           </div>
 
-          <h2>Scan a URL</h2>
+          <h2>Is This URL Safe to Open?</h2>
 
           <p className="scanner-description">
             Enter a website URL and CyberShield
@@ -1398,7 +1419,7 @@ function App() {
             ✉
           </div>
 
-          <h2>Scan an Email</h2>
+          <h2>Is This Email Suspicious or Safe?</h2>
 
           <p className="scanner-description">
             Paste an email message below.
@@ -1409,7 +1430,7 @@ function App() {
 
           <textarea
             className="email-input"
-            placeholder="Enter email"
+            placeholder="Enter email content here..."
             value={email}
             onChange={event =>
               setEmail(event.target.value)
@@ -1523,7 +1544,7 @@ function App() {
             ▣
           </div>
 
-          <h2>Scan a File</h2>
+          <h2>Is This File Safe to Upload?</h2>
 
           <p className="scanner-description">
             Upload an image, video, PDF or

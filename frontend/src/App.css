@@ -5191,3 +5191,35 @@ tr:last-child td {
 .email-input + .primary-button {
   margin-top: 16px;
 }
+.result-summary {
+  margin-top: 18px;
+  border: 1px solid rgba(139, 92, 246, 0.16);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.result-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.result-summary-row:last-child {
+  border-bottom: none;
+}
+
+.result-summary-row span {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.result-summary-row strong {
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+}
