@@ -13,6 +13,105 @@ const API = (
     : "https://cybershield-ai-ia1n.onrender.com")
 ).replace(/\/+$/, "");
 
+const NOTIFICATION_READ_KEY_PREFIX = "cybershield_notification_reads_v1";
+
+function getNotificationReadKey(userId) {
+  return `${NOTIFICATION_READ_KEY_PREFIX}:${userId || "guest"}`;
+}
+
+function loadNotificationReadIds(key) {
+  try {
+    const storedIds = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(storedIds)
+      ? new Set(storedIds.filter(id => typeof id === "string"))
+      : new Set();
+  } catch (error) {
+    console.error("Unable to load notification read state", error);
+    return new Set();
+  }
+}
+
+function saveNotificationReadIds(key, ids) {
+  try {
+    localStorage.setItem(key, JSON.stringify([...ids]));
+  } catch (error) {
+    console.error("Unable to save notification read state", error);
+  }
+}
+
+function getRelativeTime(value) {
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) {
+    return "Time unavailable";
+  }
+
+  const minutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60000));
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes} min ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  if (hours < 48) return "Yesterday";
+  return `${Math.floor(hours / 24)} days ago`;
+}
+
+function getScanNotification(scan) {
+  const scanType = String(scan.scan_type || "Security").toLowerCase();
+  const typeLabel = {
+    url: "URL scan",
+    email: "Email scan",
+    file: "File scan",
+    password: "Password analysis"
+  }[scanType] || "Security scan";
+  const status = String(scan.status || "").toLowerCase();
+  const target = String(scan.target || "submitted item");
+  const id = scan.id != null
+    ? `scan:${scan.id}`
+    : `scan:${scanType}:${target}:${scan.created_at || ""}`;
+
+  if (["malicious", "high-risk", "weak"].includes(status)) {
+    return {
+      id,
+      title: "High-risk result detected",
+      message: `${typeLabel} identified a high-risk result for ${target}.`,
+      priority: "high",
+      icon: "alert",
+      timestamp: scan.created_at
+    };
+  }
+
+  if (["suspicious", "medium"].includes(status)) {
+    return {
+      id,
+      title: "Suspicious activity detected",
+      message: `${typeLabel} found indicators that need review for ${target}.`,
+      priority: "medium",
+      icon: "alert",
+      timestamp: scan.created_at
+    };
+  }
+
+  if (["safe", "strong", "very-strong", "private"].includes(status)) {
+    return {
+      id,
+      title: `${typeLabel} completed`,
+      message: `No significant risks were reported for ${target}.`,
+      priority: "low",
+      icon: "check",
+      timestamp: scan.created_at
+    };
+  }
+
+  return {
+    id,
+    title: `${typeLabel} needs review`,
+    message: `The result for ${target} could not be classified as safe.`,
+    priority: "medium",
+    icon: "alert",
+    timestamp: scan.created_at
+  };
+}
+
 function getLoggedInUser() {
   try {
     const user = localStorage.getItem("cybershield_user");
@@ -60,8 +159,15 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const mobileMenuButtonRef = useRef(null);
+  const notificationButtonRef = useRef(null);
+  const notificationPanelRef = useRef(null);
   const reportCloseButtonRef = useRef(null);
   const reportTriggerRef = useRef(null);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const notificationReadKey = getNotificationReadKey(currentUser?.id);
+  const [readNotificationIds, setReadNotificationIds] = useState(
+    () => loadNotificationReadIds(notificationReadKey)
+  );
   const [quickScanType, setQuickScanType] = useState("url");
   const [quickScanInput, setQuickScanInput] = useState("");
 
@@ -92,6 +198,7 @@ function App() {
   const [threatRecent, setThreatRecent] = useState([]);
 
   const [systemStatus, setSystemStatus] = useState(null);
+  const [systemStatusCheckedAt, setSystemStatusCheckedAt] = useState(null);
   const [systemLoading, setSystemLoading] = useState(false);
 
   const [scans, setScans] = useState([]);
@@ -221,6 +328,7 @@ function App() {
       }
 
       setSystemStatus(data);
+      setSystemStatusCheckedAt(new Date().toISOString());
     } catch (error) {
       console.error(error);
 
@@ -230,6 +338,7 @@ function App() {
         system_protected: false,
         error: error.message
       });
+      setSystemStatusCheckedAt(new Date().toISOString());
     } finally {
       setSystemLoading(false);
     }
@@ -256,6 +365,98 @@ function App() {
       );
     };
   }, []);
+
+  useEffect(() => {
+    const handleNotificationStorage = event => {
+      if (event.key === notificationReadKey) {
+        setReadNotificationIds(loadNotificationReadIds(notificationReadKey));
+      }
+    };
+
+    window.addEventListener("storage", handleNotificationStorage);
+    return () => {
+      window.removeEventListener("storage", handleNotificationStorage);
+    };
+  }, [notificationReadKey]);
+
+  useEffect(() => {
+    if (!notificationsOpen) {
+      return undefined;
+    }
+
+    const handleOutsideClick = event => {
+      if (
+        !notificationPanelRef.current?.contains(event.target) &&
+        !notificationButtonRef.current?.contains(event.target)
+      ) {
+        setNotificationsOpen(false);
+      }
+    };
+
+    const handleNotificationKeyDown = event => {
+      if (event.key === "Escape") {
+        setNotificationsOpen(false);
+        notificationButtonRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("pointerdown", handleOutsideClick);
+    document.addEventListener("keydown", handleNotificationKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handleOutsideClick);
+      document.removeEventListener("keydown", handleNotificationKeyDown);
+    };
+  }, [notificationsOpen]);
+
+  const systemNotification = systemStatus && systemStatusCheckedAt
+    ? {
+        id: `system:${systemStatus.status}:${systemStatus.protection_score}`,
+        title: systemStatus.status === "protected"
+          ? "System protection active"
+          : systemStatus.status === "at_risk"
+            ? "System protection at risk"
+            : "System status needs review",
+        message: systemStatus.status === "protected"
+          ? "The latest device security check reports protection is active."
+          : "The latest device security check could not confirm full protection.",
+        priority: systemStatus.status === "at_risk"
+          ? "high"
+          : systemStatus.status === "protected"
+            ? "low"
+            : "medium",
+        icon: systemStatus.status === "protected" ? "check" : "alert",
+        timestamp: systemStatusCheckedAt
+      }
+    : null;
+  const notifications = [
+    ...scans.map(getScanNotification),
+    ...(systemNotification ? [systemNotification] : [])
+  ]
+    .sort((first, second) =>
+      new Date(second.timestamp || 0) - new Date(first.timestamp || 0)
+    )
+    .slice(0, 30);
+  const unreadNotificationCount = notifications.filter(
+    notification => !readNotificationIds.has(notification.id)
+  ).length;
+
+  const markNotificationRead = id => {
+    setReadNotificationIds(previousIds => {
+      const nextIds = new Set(previousIds);
+      nextIds.add(id);
+      saveNotificationReadIds(notificationReadKey, nextIds);
+      return nextIds;
+    });
+  };
+
+  const markAllNotificationsRead = () => {
+    const nextIds = new Set([
+      ...readNotificationIds,
+      ...notifications.map(notification => notification.id)
+    ]);
+    setReadNotificationIds(nextIds);
+    saveNotificationReadIds(notificationReadKey, nextIds);
+  };
 
   useEffect(() => {
     if (!mobileSidebarOpen) {
@@ -4392,9 +4593,85 @@ function App() {
 
           <div className="topbar-actions">
 
-            <button type="button" aria-label="Notifications" title="Notifications">
-              <Icon name="bell" size={16} />
-            </button>
+            <div className="notification-anchor">
+              <button
+                className="notification-bell"
+                ref={notificationButtonRef}
+                type="button"
+                aria-label="Notifications"
+                aria-expanded={notificationsOpen}
+                aria-controls="notification-panel"
+                title="Notifications"
+                onClick={() => setNotificationsOpen(open => !open)}
+              >
+                <Icon name="bell" size={16} />
+                {unreadNotificationCount > 0 && (
+                  <span className="notification-count" aria-hidden="true">
+                    {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                  </span>
+                )}
+              </button>
+
+              {notificationsOpen && (
+                <section
+                  className="notification-panel"
+                  id="notification-panel"
+                  ref={notificationPanelRef}
+                  role="region"
+                  aria-labelledby="notification-panel-title"
+                >
+                  <div className="notification-panel-header">
+                    <h2 id="notification-panel-title">Notifications</h2>
+                    <button
+                      className="notification-mark-read"
+                      type="button"
+                      disabled={unreadNotificationCount === 0}
+                      onClick={markAllNotificationsRead}
+                    >
+                      Mark all as read
+                    </button>
+                  </div>
+
+                  {notifications.length === 0 ? (
+                    <div className="notification-empty">
+                      <span className="notification-empty-icon">
+                        <Icon name="bell" size={19} />
+                      </span>
+                      <strong>You're all caught up</strong>
+                      <p>No new security notifications.</p>
+                    </div>
+                  ) : (
+                    <div className="notification-list">
+                      {notifications.map(notification => {
+                        const isRead = readNotificationIds.has(notification.id);
+
+                        return (
+                          <button
+                            className={`notification-item ${notification.priority} ${isRead ? "read" : "unread"}`}
+                            type="button"
+                            key={notification.id}
+                            aria-label={`${notification.title}. ${notification.message} ${getRelativeTime(notification.timestamp)}${isRead ? ", read" : ", unread"}`}
+                            onClick={() => markNotificationRead(notification.id)}
+                          >
+                            <span className="notification-item-icon">
+                              <Icon name={notification.icon} size={16} />
+                            </span>
+                            <span className="notification-item-copy">
+                              <strong>{notification.title}</strong>
+                              <span>{notification.message}</span>
+                              <small>{getRelativeTime(notification.timestamp)}</small>
+                            </span>
+                            {!isRead && (
+                              <span className="notification-unread-dot" aria-hidden="true" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              )}
+            </div>
 
             <button
               type="button"
