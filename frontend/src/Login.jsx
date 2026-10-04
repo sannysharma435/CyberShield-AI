@@ -260,7 +260,7 @@ function Login() {
               </div>
 
               {error && (
-                <div className="login-error">
+                <div className="login-error" role="alert">
                   <span>!</span>
                   {error}
                 </div>

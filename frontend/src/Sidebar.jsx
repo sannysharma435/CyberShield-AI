@@ -1,24 +1,6 @@
 import Icon from "./Icon";
 import BrandMark from "./BrandMark";
-
-export const menuItems = [
-  { id: "dashboard", icon: "dashboard", label: "Dashboard" },
-  { id: "url", icon: "url", label: "URL Scanner", navLabel: "URL" },
-  { id: "email", icon: "email", label: "Email Scanner", navLabel: "Email" },
-  { id: "file", icon: "file", label: "File Scanner", navLabel: "File" },
-  { id: "password", icon: "password", label: "Password Checker", navLabel: "Passwords" },
-  { id: "privacy", icon: "privacy", label: "Privacy Analyzer", navLabel: "Privacy" },
-  { id: "threat", icon: "threat", label: "Threat Intelligence", navLabel: "Threat intel" },
-  { id: "system", icon: "system", label: "System Monitor", navLabel: "System monitor" },
-  { id: "reports", icon: "reports", label: "Reports" }
-];
-
-const menuGroups = [
-  { label: "Overview", items: ["dashboard"] },
-  { label: "Scanners", items: ["url", "email", "file"] },
-  { label: "Tools", items: ["password", "privacy"] },
-  { label: "Insights", items: ["threat", "system", "reports"] }
-];
+import { menuGroups, menuItems } from "./navigation";
 
 function Sidebar({
   active,
@@ -34,6 +16,9 @@ function Sidebar({
   return (
     <aside
       id="app-sidebar"
+      role={mobileOpen ? "dialog" : undefined}
+      aria-label="Application navigation"
+      aria-modal={mobileOpen ? "true" : undefined}
       className={`sidebar ${collapsed ? "collapsed" : ""} ${
         mobileOpen ? "mobile-open" : ""
       }`}
@@ -68,10 +53,20 @@ function Sidebar({
         </button>
       </div>
 
-      <div className="sidebar-section">
+      <nav className="sidebar-section" aria-label="Primary">
         {menuGroups.map(group => (
-          <div className="sidebar-nav-group" key={group.label}>
-            <span className="sidebar-label">{group.label}</span>
+          <div
+            className="sidebar-nav-group"
+            key={group.label}
+            role="group"
+            aria-labelledby={`sidebar-group-${group.label.toLowerCase()}`}
+          >
+            <span
+              className="sidebar-label"
+              id={`sidebar-group-${group.label.toLowerCase()}`}
+            >
+              {group.label}
+            </span>
             {group.items.map(id => {
               const item = menuItems.find(menuItem => menuItem.id === id);
 
@@ -102,7 +97,7 @@ function Sidebar({
             })}
           </div>
         ))}
-      </div>
+      </nav>
 
       <div className="sidebar-bottom">
         <button

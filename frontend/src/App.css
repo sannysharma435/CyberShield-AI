@@ -7363,12 +7363,19 @@ button:focus-visible {
     border-right-color: rgba(111, 116, 164, 0.3);
     background: #0b0b19;
     box-shadow: 18px 0 45px rgba(0, 0, 0, 0.35);
-    transition: transform 0.24s ease;
+    visibility: hidden;
+    transition:
+      transform 0.24s ease,
+      visibility 0s linear 0.24s;
     will-change: transform;
   }
 
   .app-shell .sidebar.mobile-open {
+    visibility: visible;
     transform: translateX(0);
+    transition:
+      transform 0.24s ease,
+      visibility 0s;
   }
 
   .app-shell .sidebar-toggle {

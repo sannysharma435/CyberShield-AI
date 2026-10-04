@@ -430,7 +430,7 @@ function Signup() {
               </div>
 
               {error && (
-                <div className="signup-error">
+                <div className="signup-error" role="alert">
 
                   <span>!</span>
 

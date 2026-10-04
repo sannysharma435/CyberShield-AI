@@ -323,6 +323,7 @@ function ThreatIntelligence() {
 
             <input
               type="text"
+              aria-label="Threat indicator to analyze"
               value={input}
               onChange={event => setInput(event.target.value)}
               onKeyDown={handleKeyDown}
@@ -332,6 +333,7 @@ function ThreatIntelligence() {
             {input && (
               <button
                 type="button"
+                aria-label="Clear threat indicator"
                 onClick={() => {
                   setInput("");
                   setAnalysis(null);
@@ -364,6 +366,7 @@ function ThreatIntelligence() {
                   ? "threat-type-button active"
                   : "threat-type-button"
               }
+              aria-pressed={selectedType === type}
               onClick={() => setSelectedType(type)}
             >
               <span>

@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Icon from "./Icon";
 import BrandMark from "./BrandMark";
-import Sidebar, { menuItems } from "./Sidebar";
+import Sidebar from "./Sidebar";
+import { menuItems } from "./navigation";
 import "./App.css";
 
 const API = (
@@ -58,6 +59,9 @@ function App() {
   const [active, setActive] = useState("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const mobileMenuButtonRef = useRef(null);
+  const reportCloseButtonRef = useRef(null);
+  const reportTriggerRef = useRef(null);
   const [quickScanType, setQuickScanType] = useState("url");
   const [quickScanInput, setQuickScanInput] = useState("");
 
@@ -90,12 +94,11 @@ function App() {
   const [systemStatus, setSystemStatus] = useState(null);
   const [systemLoading, setSystemLoading] = useState(false);
 
+  const [scans, setScans] = useState([]);
   const [reportSearch, setReportSearch] = useState("");
   const [reportType, setReportType] = useState("all");
   const [reportStatus, setReportStatus] = useState("all");
   const [reportSelected, setReportSelected] = useState(null);
-
-  const [scans, setScans] = useState([]);
 
   const [stats, setStats] = useState({
     total: 0,
@@ -103,6 +106,20 @@ function App() {
     suspicious: 0,
     malicious: 0
   });
+
+  const closeMobileSidebar = () => {
+    setMobileSidebarOpen(false);
+    if (window.matchMedia("(max-width: 820px)").matches) {
+      window.requestAnimationFrame(() => {
+        mobileMenuButtonRef.current?.focus();
+      });
+    }
+  };
+
+  const closeReport = () => {
+    setReportSelected(null);
+    reportTriggerRef.current?.focus();
+  };
 
   const getAuthHeaders = includeJson => {
     const user = getLoggedInUser();
@@ -239,6 +256,109 @@ function App() {
       );
     };
   }, []);
+
+  useEffect(() => {
+    if (!mobileSidebarOpen) {
+      return undefined;
+    }
+
+    const sidebar = document.getElementById("app-sidebar");
+    const getFocusableItems = () =>
+      Array.from(
+        sidebar?.querySelectorAll(
+          'button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ) || []
+      ).filter(item =>
+        item.getClientRects().length &&
+        getComputedStyle(item).visibility !== "hidden"
+      );
+
+    const firstNavigationItem = sidebar?.querySelector(".nav-item");
+    (firstNavigationItem || getFocusableItems()[0])?.focus();
+
+    const handleSidebarKeyDown = event => {
+      if (event.key === "Escape") {
+        closeMobileSidebar();
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const focusableItems = getFocusableItems();
+      const first = focusableItems[0];
+      const last = focusableItems[focusableItems.length - 1];
+
+      if (!first || !last) {
+        return;
+      }
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleSidebarKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleSidebarKeyDown);
+    };
+  }, [mobileSidebarOpen]);
+
+  useEffect(() => {
+    if (!reportSelected) {
+      return undefined;
+    }
+
+    reportCloseButtonRef.current?.focus();
+
+    const modal = document.querySelector(".report-modal");
+    const getFocusableItems = () =>
+      Array.from(
+        modal?.querySelectorAll(
+          'button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ) || []
+      ).filter(item =>
+        item.getClientRects().length &&
+        getComputedStyle(item).visibility !== "hidden"
+      );
+
+    const handleModalKeyDown = event => {
+      if (event.key === "Escape") {
+        closeReport();
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const focusableItems = getFocusableItems();
+      const first = focusableItems[0];
+      const last = focusableItems[focusableItems.length - 1];
+
+      if (!first || !last) {
+        return;
+      }
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleModalKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleModalKeyDown);
+    };
+  }, [reportSelected]);
 
   const handleLogout = () => {
     localStorage.removeItem("cybershield_user");
@@ -942,6 +1062,8 @@ function App() {
         className={`scan-result ${statusClass(
           status
         )}`}
+        role="status"
+        aria-live="polite"
       >
         <div className="result-header">
           <div>
@@ -3216,6 +3338,7 @@ function App() {
           </div>
 
           <select
+            aria-label="Filter reports by scan type"
             value={reportType}
             onChange={event =>
               setReportType(
@@ -3245,6 +3368,7 @@ function App() {
           </select>
 
           <select
+            aria-label="Filter reports by status"
             value={reportStatus}
             onChange={event =>
               setReportStatus(
@@ -3494,11 +3618,12 @@ function App() {
                         <td>
                           <button
                             className="report-view-button"
-                            onClick={() =>
+                            onClick={event => {
+                              reportTriggerRef.current = event.currentTarget;
                               setReportSelected(
                                 scan
-                              )
-                            }
+                              );
+                            }}
                           >
                             View
                           </button>
@@ -3520,12 +3645,13 @@ function App() {
       {reportSelected && (
         <div
           className="report-modal-overlay"
-          onClick={() =>
-            setReportSelected(null)
-          }
+          onClick={closeReport}
         >
           <div
             className="report-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="report-modal-title"
             onClick={event =>
               event.stopPropagation()
             }
@@ -3537,16 +3663,17 @@ function App() {
                   SECURITY REPORT
                 </span>
 
-                <h2>
+                <h2 id="report-modal-title">
                   Report #
                   {reportSelected.id}
                 </h2>
               </div>
 
               <button
-                onClick={() =>
-                  setReportSelected(null)
-                }
+                ref={reportCloseButtonRef}
+                type="button"
+                aria-label="Close security report"
+                onClick={closeReport}
               >
                 ×
               </button>
@@ -4184,7 +4311,8 @@ function App() {
           className="sidebar-overlay"
           type="button"
           aria-label="Close navigation menu"
-          onClick={() => setMobileSidebarOpen(false)}
+          tabIndex={-1}
+          onClick={closeMobileSidebar}
         />
       )}
 
@@ -4194,24 +4322,34 @@ function App() {
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(collapsed => !collapsed)}
         mobileOpen={mobileSidebarOpen}
-        onCloseMobile={() => setMobileSidebarOpen(false)}
+        onCloseMobile={closeMobileSidebar}
         displayName={displayName}
         displayEmail={displayEmail}
         avatarText={avatarText}
       />
 
-      <main className={`main ${active === "dashboard" ? "dashboard-frame" : ""}`}>
+      <main
+        className={`main ${active === "dashboard" ? "dashboard-frame" : ""}`}
+        inert={mobileSidebarOpen}
+      >
 
         <header className="topbar">
 
           <button
             className="mobile-menu-button"
+            ref={mobileMenuButtonRef}
             type="button"
             aria-label={mobileSidebarOpen ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={mobileSidebarOpen}
             aria-controls="app-sidebar"
             title={mobileSidebarOpen ? "Close navigation menu" : "Open navigation menu"}
-            onClick={() => setMobileSidebarOpen(open => !open)}
+            onClick={() => {
+              if (mobileSidebarOpen) {
+                closeMobileSidebar();
+              } else {
+                setMobileSidebarOpen(true);
+              }
+            }}
           >
             <Icon name={mobileSidebarOpen ? "close" : "menu"} size={18} />
           </button>
