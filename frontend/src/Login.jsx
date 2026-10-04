@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Icon from "./Icon";
+import BrandMark from "./BrandMark";
 import "./Login.css";
 
 function Login() {
@@ -63,12 +65,15 @@ function Login() {
 
             <div className="visual-brand">
               <div className="visual-logo">
-                ⬡
+                <BrandMark />
               </div>
 
               <div>
-                <strong>CyberShield</strong>
-                <span>AI SECURITY PLATFORM</span>
+                <strong className="brand-wordmark">
+                  <span className="brand-word-cyber">Cyber</span>
+                  <span className="brand-word-shield">Shield</span>
+                </strong>
+                <span>AI SECURITY</span>
               </div>
             </div>
 
@@ -95,35 +100,35 @@ function Login() {
               <div className="security-points">
 
                 <div className="security-point">
-                  <div className="point-icon">✓</div>
+                  <div className="point-icon"><Icon name="check" size={14} /></div>
 
                   <div>
                     <strong>
-                      AI Threat Detection
+                      Preliminary Threat Analysis
                     </strong>
 
                     <span>
-                      Intelligent security analysis
+                      Review suspicious indicators
                     </span>
                   </div>
                 </div>
 
                 <div className="security-point">
-                  <div className="point-icon">✓</div>
+                  <div className="point-icon"><Icon name="check" size={14} /></div>
 
                   <div>
                     <strong>
-                      Real-time Protection
+                      Security Analysis
                     </strong>
 
                     <span>
-                      Monitor suspicious activity
+                      Review suspicious activity
                     </span>
                   </div>
                 </div>
 
                 <div className="security-point">
-                  <div className="point-icon">✓</div>
+                  <div className="point-icon"><Icon name="check" size={14} /></div>
 
                   <div>
                     <strong>
@@ -141,7 +146,7 @@ function Login() {
 
             <div className="visual-footer">
               <span className="footer-status"></span>
-              All security systems operational
+              Security analysis workspace
             </div>
 
           </div>
@@ -151,7 +156,7 @@ function Login() {
 
           <div className="visual-shield">
             <div className="shield-glow"></div>
-            <span>⬡</span>
+            <Icon name="privacy" size={20} />
           </div>
 
         </div>
@@ -160,12 +165,15 @@ function Login() {
 
           <div className="mobile-brand">
             <div className="mobile-logo">
-              ⬡
+              <BrandMark />
             </div>
 
             <div>
-              <strong>CyberShield</strong>
-              <span>AI SECURITY PLATFORM</span>
+              <strong className="brand-wordmark">
+                <span className="brand-word-cyber">Cyber</span>
+                <span className="brand-word-shield">Shield</span>
+              </strong>
+              <span>AI SECURITY</span>
             </div>
           </div>
 
@@ -187,14 +195,15 @@ function Login() {
             <form onSubmit={handleLogin}>
 
               <div className="login-field">
-                <label>Email Address</label>
+                <label htmlFor="login-email">Email Address</label>
 
                 <div className="login-input-wrapper">
                   <span className="input-icon">
-                    ✉
+                    <Icon name="email" size={16} />
                   </span>
 
                   <input
+                    id="login-email"
                     type="email"
                     placeholder="you@example.com"
                     value={email}
@@ -207,14 +216,15 @@ function Login() {
               </div>
 
               <div className="login-field">
-                <label>Password</label>
+                <label htmlFor="login-password">Password</label>
 
                 <div className="login-input-wrapper password-wrapper">
                   <span className="input-icon">
-                    ●
+                    <Icon name="password" size={16} />
                   </span>
 
                   <input
+                    id="login-password"
                     type={
                       showPassword
                         ? "text"
@@ -244,48 +254,7 @@ function Login() {
                         : "Show password"
                     }
                   >
-                    {showPassword ? (
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <path
-                          d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-
-                        <circle
-                          cx="12"
-                          cy="12"
-                          r="2.7"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <path
-                          d="M3 3l18 18"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                        />
-
-                        <path
-                          d="M10.6 6.2C11.05 6.07 11.52 6 12 6c6 0 9.5 6 9.5 6a17.8 17.8 0 0 1-3.2 3.75M6.4 6.85C4.15 8.18 2.5 12 2.5 12s3.5 6 9.5 6c1.2 0 2.3-.23 3.28-.6"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
+                    <Icon name={showPassword ? "eye" : "eyeOff"} size={17} />
                   </button>
                 </div>
               </div>
@@ -302,7 +271,7 @@ function Login() {
                 className="login-button"
               >
                 <span>Sign In</span>
-                <b>→</b>
+                <Icon name="chevron" size={16} />
               </button>
 
             </form>
@@ -337,7 +306,7 @@ function Login() {
           </div>
 
           <div className="login-security">
-            <span>⬡</span>
+            <Icon name="privacy" size={16} />
             Secure CyberShield Session
           </div>
 

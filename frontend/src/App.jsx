@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Icon from "./Icon";
+import BrandMark from "./BrandMark";
+import Sidebar, { menuItems } from "./Sidebar";
 import "./App.css";
 
 const API = (
@@ -8,18 +11,6 @@ const API = (
     ? "http://127.0.0.1:8000"
     : "https://cybershield-ai-ia1n.onrender.com")
 ).replace(/\/+$/, "");
-
-const menuItems = [
-  { id: "dashboard", icon: "▦", label: "Dashboard" },
-  { id: "url", icon: "↗", label: "URL Scanner" },
-  { id: "email", icon: "✉", label: "Email Scanner" },
-  { id: "file", icon: "▣", label: "File Scanner" },
-  { id: "password", icon: "◉", label: "Password Checker" },
-  { id: "privacy", icon: "◇", label: "Privacy Analyzer" },
-  { id: "threat", icon: "⌁", label: "Threat Intelligence" },
-  { id: "system", icon: "⌘", label: "System Monitor" },
-  { id: "reports", icon: "▤", label: "Reports" }
-];
 
 function getLoggedInUser() {
   try {
@@ -67,6 +58,8 @@ function App() {
   const [active, setActive] = useState("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [quickScanType, setQuickScanType] = useState("url");
+  const [quickScanInput, setQuickScanInput] = useState("");
 
   const [url, setUrl] = useState("");
   const [urlResult, setUrlResult] = useState(null);
@@ -919,10 +912,25 @@ function App() {
       result.analysis?.status ||
       "unknown";
 
+    const isError = status === "error";
     const score =
       result.risk_score ??
       result.analysis?.risk_score ??
       0;
+    const threatLevel = isError
+      ? "Not available"
+      : score >= 70
+      ? "High"
+      : score >= 35
+      ? "Moderate"
+      : "Low";
+    const recommendation = isError
+      ? "Retry the analysis. No risk verdict is available for this request."
+      : score >= 70
+      ? "Avoid opening or interacting with this item until it has been independently verified."
+      : score >= 35
+      ? "Review the indicators carefully and verify the source before proceeding."
+      : "No strong indicators were identified by this preliminary analysis. Continue to use caution.";
 
     const indicators =
       result.indicators ||
@@ -948,15 +956,21 @@ function App() {
 
           <div className="risk-score">
             <span>Risk Score</span>
-            <strong>{score}</strong>
-            <small>/100</small>
+            <strong>{isError ? "N/A" : score}</strong>
+            {!isError && <small>/100</small>}
           </div>
         </div>
 
         <div className="result-message">
+        <strong>Why this result?</strong>
+        <p>
           {result.message ||
             result.analysis?.reason ||
             "Analysis completed"}
+        </p>
+        <small>
+          Preliminary security analysis only; this is not a definitive malware verdict.
+        </small>
         </div>
 
         <div className="result-summary">
@@ -967,7 +981,12 @@ function App() {
 
           <div className="result-summary-row">
             <span>Risk Score</span>
-            <strong>{score}/100</strong>
+            <strong>{isError ? "Not available" : `${score}/100`}</strong>
+          </div>
+
+          <div className="result-summary-row">
+            <span>Threat Level</span>
+            <strong>{threatLevel}</strong>
           </div>
 
           <div className="result-summary-row">
@@ -988,47 +1007,159 @@ function App() {
                   className="indicator"
                   key={index}
                 >
-                  <b>•</b>
+                  <Icon name="alert" size={14} />
                   {item}
                 </div>
               )
             )}
           </div>
         )}
+
+        <div className="result-recommendation">
+          <strong>Recommendation</strong>
+          <p>{recommendation}</p>
+        </div>
       </div>
     );
+  };
+
+  const checklistTasks = [
+    {
+      label: "Run a URL scan",
+      icon: "url",
+      done: scans.some(scan =>
+        String(scan.scan_type || "").toLowerCase().includes("url") &&
+        String(scan.status || "").toLowerCase() !== "error"
+      ),
+      page: "url"
+    },
+    {
+      label: "Check a password",
+      icon: "password",
+      done: scans.some(scan =>
+        String(scan.scan_type || "").toLowerCase().includes("password") &&
+        String(scan.status || "").toLowerCase() !== "error"
+      ),
+      page: "password"
+    },
+    {
+      label: "Review privacy settings",
+      icon: "privacy",
+      done: Boolean(
+        privacyResult &&
+        String(privacyResult.status || "").toLowerCase() !== "error"
+      ),
+      page: "privacy"
+    }
+  ];
+  const checklistProgress = checklistTasks.filter(task => task.done).length;
+  const quickScanItems = [
+    { id: "url", label: "URL", icon: "url", page: "url" },
+    { id: "email", label: "Email", icon: "email", page: "email" },
+    { id: "file", label: "File", icon: "file", page: "file" },
+    { id: "password", label: "Password", icon: "password", page: "password" }
+  ];
+
+  const openQuickScanner = () => {
+    if (quickScanType === "url") {
+      setUrl(quickScanInput);
+    } else if (quickScanType === "email") {
+      setEmail(quickScanInput);
+    } else if (quickScanType === "password") {
+      setPassword(quickScanInput);
+    }
+
+    setActive(quickScanType);
   };
 
   const dashboard = (
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">
-            SECURITY OVERVIEW
-          </div>
-
-          <h1>Security Dashboard</h1>
-
-          <p>
-            CyberShield AI helps you analyze URLs, emails, files,
-            passwords, and privacy risks from one unified security
-            dashboard. It provides preliminary security analysis,
-            risk assessments, scan history, reports, and media
-            security tools to help identify potentially suspicious
-            activity.
-          </p>
+          <h1>Security dashboard</h1>
         </div>
 
         <div className="protection-badge">
-          <span className="pulse" />
-          Protection Active
+          <span className="status-dot" />
+          Analysis tools ready
         </div>
+      </div>
+
+      <div className="panel scan-launcher">
+        <div className="scan-launcher-main">
+          {quickScanType === "file" ? (
+            <label className="scan-launcher-file">
+              <Icon name="upload" size={18} />
+              <span>{file?.name || "Choose a file to scan"}</span>
+              <input
+                type="file"
+                aria-label="Choose a file to scan"
+                onChange={event => setFile(event.target.files?.[0] || null)}
+              />
+            </label>
+          ) : (
+            <div className="scan-launcher-input">
+              <Icon name={quickScanItems.find(item => item.id === quickScanType)?.icon || "url"} size={18} />
+              <input
+                type={quickScanType === "password" ? "password" : "text"}
+                aria-label={`${quickScanItems.find(item => item.id === quickScanType)?.label} input`}
+                placeholder={
+                  quickScanType === "email"
+                    ? "Paste email content to analyze"
+                    : quickScanType === "password"
+                    ? "Enter a password to check"
+                    : "Paste a URL to analyze"
+                }
+                value={quickScanInput}
+                onChange={event => setQuickScanInput(event.target.value)}
+                onKeyDown={event => {
+                  if (event.key === "Enter" && quickScanInput.trim()) {
+                    openQuickScanner();
+                  }
+                }}
+              />
+            </div>
+          )}
+          <button
+            className="primary-button scan-launcher-button"
+            type="button"
+            onClick={openQuickScanner}
+            disabled={
+              quickScanType === "file"
+                ? !file
+                : !quickScanInput.trim()
+            }
+          >
+            Continue to scanner
+            <Icon name="chevron" size={16} />
+          </button>
+        </div>
+        <div className="scan-launcher-types" role="group" aria-label="Choose a scanner">
+          {quickScanItems.map(item => (
+            <button
+              className={`scan-type-option ${quickScanType === item.id ? "selected" : ""}`}
+              type="button"
+              key={item.id}
+              aria-pressed={quickScanType === item.id}
+              onClick={() => {
+                setQuickScanType(item.id);
+                setQuickScanInput("");
+              }}
+            >
+              <Icon name={item.icon} size={14} />
+              {item.label}
+            </button>
+          ))}
+        </div>
+        <p className="scan-launcher-note">
+          Results are preliminary risk assessments based on detected indicators, not a definitive malware verdict.
+        </p>
       </div>
 
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon blue">
-            ⌁
+            <Icon name="scan" />
           </div>
 
           <div>
@@ -1041,7 +1172,7 @@ function App() {
 
         <div className="stat-card">
           <div className="stat-icon green">
-            ✓
+            <Icon name="check" />
           </div>
 
           <div>
@@ -1049,12 +1180,12 @@ function App() {
             <strong>{stats.safe}</strong>
           </div>
 
-          <small>Threat-free results</small>
+          <small>Low-risk assessments</small>
         </div>
 
         <div className="stat-card">
           <div className="stat-icon yellow">
-            !
+            <Icon name="alert" />
           </div>
 
           <div>
@@ -1067,7 +1198,7 @@ function App() {
 
         <div className="stat-card">
           <div className="stat-icon red">
-            ⚠
+            <Icon name="alert" />
           </div>
 
           <div>
@@ -1087,36 +1218,42 @@ function App() {
                 SECURITY TOOLS
               </span>
 
-              <h2>Quick Scanner</h2>
+              <h2>Choose a scanner</h2>
             </div>
 
-            <span className="live-dot">
-              LIVE
-            </span>
+            <span className="live-dot">READY</span>
           </div>
+
+          <p className="scanner-description dashboard-scanner-description">
+            Select a tool to open its existing analysis workflow.
+          </p>
 
           <div className="quick-tools">
             <button
+              type="button"
+              aria-label="Open URL Scanner"
               onClick={() =>
                 setActive("url")
               }
             >
-              <span>↗</span>
+              <span><Icon name="url" /></span>
 
               <div>
                 <strong>URL Scanner</strong>
                 <small>
-                  Detect malicious links
+                  Check links for risk indicators
                 </small>
               </div>
             </button>
 
             <button
+              type="button"
+              aria-label="Open File Scanner"
               onClick={() =>
                 setActive("file")
               }
             >
-              <span>▣</span>
+              <span><Icon name="file" /></span>
 
               <div>
                 <strong>File Scanner</strong>
@@ -1127,11 +1264,13 @@ function App() {
             </button>
 
             <button
+              type="button"
+              aria-label="Open Email Scanner"
               onClick={() =>
                 setActive("email")
               }
             >
-              <span>✉</span>
+              <span><Icon name="email" /></span>
 
               <div>
                 <strong>Email Scanner</strong>
@@ -1142,11 +1281,13 @@ function App() {
             </button>
 
             <button
+              type="button"
+              aria-label="Open Password Checker"
               onClick={() =>
                 setActive("password")
               }
             >
-              <span>◉</span>
+              <span><Icon name="password" /></span>
 
               <div>
                 <strong>
@@ -1160,11 +1301,13 @@ function App() {
             </button>
 
             <button
+              type="button"
+              aria-label="Open Privacy Analyzer"
               onClick={() =>
                 setActive("privacy")
               }
             >
-              <span>◇</span>
+              <span><Icon name="privacy" /></span>
 
               <div>
                 <strong>
@@ -1186,54 +1329,110 @@ function App() {
                 SYSTEM STATUS
               </span>
 
-              <h2>Protection Center</h2>
+              <h2>Device protection</h2>
             </div>
 
-            <span className="shield-symbol">
-              ⬡
-            </span>
+            <button
+              className="text-button"
+              type="button"
+              onClick={fetchSystemStatus}
+              disabled={systemLoading}
+            >
+              {systemLoading ? "Checking..." : "Check status"}
+            </button>
           </div>
 
-          <div className="protection-ring">
+          <div className={`system-status-summary ${systemStatus?.status === "protected" ? "safe" : systemStatus ? "warning" : ""}`}>
+            <span className="system-status-indicator" />
             <div>
-              <strong>ACTIVE</strong>
-              <span>CyberShield</span>
+              <strong>
+                {systemStatus
+                  ? systemStatus.status === "protected"
+                    ? "Protection active"
+                    : systemStatus.status === "unknown"
+                    ? "Status unavailable"
+                    : "Review protection status"
+                  : "System check not run"}
+              </strong>
+              <small>
+                {systemStatus
+                  ? systemStatus.protection_score != null
+                    ? `${systemStatus.protection_score}% protection score`
+                    : "Latest device security check"
+                  : "Run a check for this device"}
+              </small>
             </div>
           </div>
 
           <div className="protection-list">
             <div>
-              <span>
-                Real-time protection
-              </span>
-
-              <b>ON</b>
+              <span>Windows Defender</span>
+              <b className={systemStatus?.defender?.real_time_protection ? "safe" : ""}>
+                {systemStatus
+                  ? systemStatus.defender?.real_time_protection
+                    ? "ON"
+                    : "OFF"
+                  : "—"}
+              </b>
             </div>
 
             <div>
-              <span>
-                Threat monitoring
-              </span>
-
-              <b>ON</b>
+              <span>Firewall</span>
+              <b className={systemStatus?.firewall?.enabled ? "safe" : ""}>
+                {systemStatus
+                  ? systemStatus.firewall?.enabled
+                    ? "ON"
+                    : "OFF"
+                  : "—"}
+              </b>
             </div>
 
             <div>
-              <span>
-                Cloud analysis
-              </span>
-
-              <b>ON</b>
-            </div>
-
-            <div>
-              <span>
-                Privacy analysis
-              </span>
-
-              <b>ON</b>
+              <span>System monitor</span>
+              <b>{systemStatus ? "CHECKED" : "NOT CHECKED"}</b>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="dashboard-bottom-grid">
+      <div className="panel checklist-panel">
+        <div className="checklist-header">
+          <h2>Security checklist</h2>
+        </div>
+        <div
+          className="checklist-progress"
+          role="progressbar"
+          aria-label="Security checklist progress"
+          aria-valuemin="0"
+          aria-valuemax={checklistTasks.length}
+          aria-valuenow={checklistProgress}
+        >
+          <span
+            style={{
+              width: `${(checklistProgress / checklistTasks.length) * 100}%`
+            }}
+          />
+        </div>
+        <span className="checklist-count">
+          {checklistProgress} of {checklistTasks.length} done
+        </span>
+        <div className="checklist-items">
+          {checklistTasks.map(task => (
+            <button
+              className={`checklist-item ${task.done ? "complete" : ""}`}
+              type="button"
+              key={task.page}
+              onClick={() => setActive(task.page)}
+              aria-label={`${task.done ? "Completed" : "Open"}: ${task.label}`}
+            >
+              <span className="checklist-task-icon">
+                <Icon name={task.done ? "check" : task.icon} size={17} />
+              </span>
+              <span>{task.label}</span>
+              <Icon name="chevron" size={16} className="checklist-chevron" />
+            </button>
+          ))}
         </div>
       </div>
 
@@ -1244,24 +1443,37 @@ function App() {
               ACTIVITY
             </span>
 
-            <h2>
-              Recent Security Scans
-            </h2>
+            <h2>Recent Activity</h2>
           </div>
 
-          <button
-            className="text-button"
-            onClick={loadHistory}
-          >
-            Refresh ↻
-          </button>
+          <div className="history-actions">
+            <button
+              className="text-button"
+              type="button"
+              onClick={() => setActive("reports")}
+            >
+              View all
+              <Icon name="chevron" size={14} />
+            </button>
+            <button
+              className="text-button"
+              type="button"
+              onClick={loadHistory}
+            >
+              <Icon name="refresh" size={14} />
+              Refresh
+            </button>
+          </div>
         </div>
 
         <ScanTable
           scans={scans.slice(0, 8)}
           statusClass={statusClass}
           formatDate={formatDate}
+          onViewAll={() => setActive("reports")}
+          compact
         />
+      </div>
       </div>
     </>
   );
@@ -1286,7 +1498,7 @@ function App() {
       <div className="scanner-layout">
         <div className="panel scanner-panel">
           <div className="scanner-icon">
-            ↗
+            <Icon name="url" size={22} />
           </div>
 
           <h2>Is This URL Safe to Open?</h2>
@@ -1298,10 +1510,11 @@ function App() {
           </p>
 
           <div className="input-wrapper">
-            <span>⌕</span>
+            <Icon name="search" />
 
             <input
               type="text"
+              aria-label="URL to scan"
               placeholder="https://example.com"
               value={url}
               onChange={event =>
@@ -1322,7 +1535,7 @@ function App() {
           >
             {urlLoading
               ? "Scanning..."
-              : "Scan URL →"}
+              : "Scan URL"}
           </button>
 
           {renderResult(urlResult)}
@@ -1416,7 +1629,7 @@ function App() {
       <div className="scanner-layout">
         <div className="panel scanner-panel">
           <div className="scanner-icon">
-            ✉
+            <Icon name="email" size={22} />
           </div>
 
           <h2>Is This Email Suspicious or Safe?</h2>
@@ -1430,6 +1643,7 @@ function App() {
 
           <textarea
             className="email-input"
+            aria-label="Email content to scan"
             placeholder="Enter email content here..."
             value={email}
             onChange={event =>
@@ -1444,7 +1658,7 @@ function App() {
           >
             {emailLoading
               ? "Analyzing..."
-              : "Scan Email →"}
+              : "Scan Email"}
           </button>
 
           {emailResult &&
@@ -1541,7 +1755,7 @@ function App() {
       <div className="scanner-layout">
         <div className="panel scanner-panel">
           <div className="scanner-icon">
-            ▣
+            <Icon name="file" size={22} />
           </div>
 
           <h2>Is This File Safe to Upload?</h2>
@@ -1555,6 +1769,7 @@ function App() {
           <label className="file-upload">
             <input
               type="file"
+              aria-label="Choose a file to scan"
               onChange={event =>
                 setFile(
                   event.target.files?.[0] ||
@@ -1579,7 +1794,7 @@ function App() {
           >
             {fileLoading
               ? "Analyzing..."
-              : "Scan File →"}
+              : "Scan File"}
           </button>
 
           {fileResult &&
@@ -1675,7 +1890,7 @@ function App() {
       <div className="scanner-layout">
         <div className="panel scanner-panel">
           <div className="scanner-icon">
-            ◉
+            <Icon name="password" size={22} />
           </div>
 
           <h2>Check Password Strength</h2>
@@ -1687,7 +1902,7 @@ function App() {
           </p>
 
           <div className="input-wrapper password-wrapper">
-            <span>●</span>
+            <Icon name="password" />
 
             <input
               type={
@@ -1695,6 +1910,7 @@ function App() {
                   ? "text"
                   : "password"
               }
+              aria-label="Password to check"
               placeholder="Enter password"
               value={password}
               onChange={event =>
@@ -1706,7 +1922,7 @@ function App() {
 
             <button
               type="button"
-              className="password-eye-button"
+              className="password-toggle"
               onClick={() =>
                 setShowPassword(
                   !showPassword
@@ -1718,9 +1934,10 @@ function App() {
                   : "Show password"
               }
             >
-              {showPassword
-                ? "◉"
-                : "◌"}
+              <Icon
+                name={showPassword ? "eye" : "eyeOff"}
+                size={17}
+              />
             </button>
           </div>
 
@@ -1733,7 +1950,7 @@ function App() {
           >
             {passwordLoading
               ? "Checking..."
-              : "Check Password →"}
+              : "Check Password"}
           </button>
 
           {passwordResult &&
@@ -1839,7 +2056,7 @@ function App() {
       <div className="privacy-layout">
         <div className="panel privacy-main">
           <div className="privacy-hero-icon">
-            ◇
+            <Icon name="privacy" size={23} />
           </div>
 
           <h2>
@@ -1853,10 +2070,11 @@ function App() {
           </p>
 
           <div className="privacy-input-wrapper">
-            <span>⌕</span>
+            <Icon name="search" />
 
             <input
               type="text"
+              aria-label="Website URL to analyze for privacy risks"
               placeholder="https://example.com"
               value={privacyUrl}
               onChange={event =>
@@ -1879,7 +2097,7 @@ function App() {
           >
             {privacyLoading
               ? "Analyzing..."
-              : "Analyze Privacy →"}
+              : "Analyze Privacy"}
           </button>
 
           {privacyResult && (
@@ -1979,11 +2197,11 @@ function App() {
                       <div className="finding-icon">
                         {finding.type ===
                         "safe"
-                          ? "✓"
+                          ? <Icon name="check" size={16} />
                           : finding.type ===
                             "warning"
-                          ? "!"
-                          : "×"}
+                          ? <Icon name="alert" size={16} />
+                          : <Icon name="close" size={16} />}
                       </div>
 
                       <div className="finding-content">
@@ -2088,7 +2306,7 @@ function App() {
           </div>
 
           <div className="privacy-note">
-            <span>◇</span>
+            <span><Icon name="privacy" /></span>
 
             <div>
               <strong>
@@ -2128,7 +2346,7 @@ function App() {
 
         <div className="threat-mode-card">
           <div className="threat-mode-icon">
-            ⌁
+            <Icon name="threat" />
           </div>
 
           <div>
@@ -2150,7 +2368,7 @@ function App() {
       <div className="threat-lookup-card">
         <div className="lookup-heading">
           <div className="lookup-icon">
-            ⌕
+            <Icon name="search" />
           </div>
 
           <div>
@@ -2166,10 +2384,11 @@ function App() {
 
         <div className="lookup-input-row">
           <div className="lookup-input-wrapper">
-            <span>⌁</span>
+            <Icon name="threat" />
 
             <input
               type="text"
+              aria-label="Threat indicator to analyze"
               placeholder="example.com, 8.8.8.8, URL or SHA-256 hash"
               value={threatInput}
               onChange={event =>
@@ -2187,6 +2406,8 @@ function App() {
             {threatInput && (
               <button
                 className="clear-threat-input"
+                type="button"
+                aria-label="Clear threat indicator"
                 onClick={() =>
                   setThreatInput("")
                 }
@@ -2201,7 +2422,7 @@ function App() {
             onClick={analyzeThreat}
             disabled={threatLoading}
           >
-            <span>⌁</span>
+            <Icon name="scan" />
 
             {threatLoading
               ? "Analyzing..."
@@ -2240,7 +2461,7 @@ function App() {
       {!threatResult ? (
         <div className="threat-empty-state">
           <div className="empty-threat-icon">
-            ⌁
+            <Icon name="threat" size={28} />
           </div>
 
           <h2>
@@ -2269,7 +2490,7 @@ function App() {
             <div className="threat-card score-card">
               <div className="card-title">
                 <div className="card-title-icon danger">
-                  ⚠
+                  <Icon name="alert" />
                 </div>
 
                 <h3>
@@ -2302,7 +2523,7 @@ function App() {
               <div className="score-meta-grid">
                 <div className="score-meta">
                   <span className="meta-icon">
-                    ◇
+                    <Icon name="file" size={15} />
                   </span>
 
                   <div>
@@ -2318,7 +2539,7 @@ function App() {
 
                 <div className="score-meta">
                   <span className="meta-icon">
-                    ◉
+                    <Icon name="privacy" size={15} />
                   </span>
 
                   <div>
@@ -2337,7 +2558,7 @@ function App() {
             <div className="threat-card">
               <div className="card-title">
                 <div className="card-title-icon purple">
-                  ◇
+                  <Icon name="network" />
                 </div>
 
                 <h3>
@@ -2391,7 +2612,7 @@ function App() {
             <div className="threat-card categories-card">
               <div className="card-title">
                 <div className="card-title-icon purple">
-                  ⌁
+                  <Icon name="threat" />
                 </div>
 
                 <h3>
@@ -2461,7 +2682,7 @@ function App() {
             <div className="threat-card">
               <div className="card-title">
                 <div className="card-title-icon red">
-                  ⚠
+                  <Icon name="alert" />
                 </div>
 
                 <h3>
@@ -2484,7 +2705,7 @@ function App() {
                       }`}
                       key={index}
                     >
-                      <span>●</span>
+                      <Icon name="alert" size={14} />
 
                       <p>
                         {indicator}
@@ -2498,7 +2719,7 @@ function App() {
             <div className="threat-card">
               <div className="card-title">
                 <div className="card-title-icon purple">
-                  ◈
+                  <Icon name="network" />
                 </div>
 
                 <h3>
@@ -2542,7 +2763,7 @@ function App() {
               <div className="recent-header">
                 <div className="card-title">
                   <div className="card-title-icon purple">
-                    ◷
+                    <Icon name="clock" />
                   </div>
 
                   <h3>
@@ -2562,7 +2783,7 @@ function App() {
               <div className="recent-list">
                 {threatRecent.length === 0 ? (
                   <div className="no-scans">
-                    <span>⌁</span>
+                    <span><Icon name="threat" /></span>
 
                     <strong>
                       No lookups yet
@@ -2576,7 +2797,7 @@ function App() {
                         key={`${item.target}-${item.type}`}
                       >
                         <div className="recent-type">
-                          ⌁
+                          <Icon name="threat" size={16} />
                         </div>
 
                         <div className="recent-value">
@@ -2678,9 +2899,11 @@ function App() {
 
         <button
           className="reports-refresh-button"
+          type="button"
           onClick={loadHistory}
         >
-          ↻ Refresh Reports
+          <Icon name="refresh" size={15} />
+          Refresh Reports
         </button>
       </div>
 
@@ -2688,7 +2911,7 @@ function App() {
 
         <div className="report-stat-card total">
           <div className="report-stat-icon">
-            ◉
+            <Icon name="scan" />
           </div>
 
           <div>
@@ -2702,7 +2925,7 @@ function App() {
 
         <div className="report-stat-card safe">
           <div className="report-stat-icon">
-            ✓
+            <Icon name="check" />
           </div>
 
           <div>
@@ -2716,7 +2939,7 @@ function App() {
 
         <div className="report-stat-card suspicious">
           <div className="report-stat-icon">
-            !
+            <Icon name="alert" />
           </div>
 
           <div>
@@ -2732,7 +2955,7 @@ function App() {
 
         <div className="report-stat-card danger">
           <div className="report-stat-icon">
-            ⚠
+            <Icon name="alert" />
           </div>
 
           <div>
@@ -2977,11 +3200,12 @@ function App() {
         <div className="reports-filters">
 
           <div className="reports-search">
-            <span>⌕</span>
+            <Icon name="search" />
 
             <input
               type="text"
-              placeholder="Search reports..."
+              aria-label="Search scans and reports"
+              placeholder="Search scans, reports"
               value={reportSearch}
               onChange={event =>
                 setReportSearch(
@@ -3518,12 +3742,13 @@ function App() {
 
               <button
                 className="settings-action primary"
+                type="button"
                 onClick={() =>
                   navigate("/login")
                 }
               >
                 <span className="action-icon">
-                  ⇥
+                  <Icon name="password" />
                 </span>
 
                 <div>
@@ -3536,17 +3761,18 @@ function App() {
                   </small>
                 </div>
 
-                <b>→</b>
+                <Icon name="chevron" size={16} />
               </button>
 
               <button
                 className="settings-action"
+                type="button"
                 onClick={() =>
                   navigate("/signup")
                 }
               >
                 <span className="action-icon">
-                  +
+                  <Icon name="check" />
                 </span>
 
                 <div>
@@ -3559,7 +3785,7 @@ function App() {
                   </small>
                 </div>
 
-                <b>→</b>
+                <Icon name="chevron" size={16} />
               </button>
 
             </div>
@@ -3568,10 +3794,11 @@ function App() {
 
               <button
                 className="settings-action logout"
+                type="button"
                 onClick={handleLogout}
               >
                 <span className="action-icon">
-                  ⇥
+                  <Icon name="close" />
                 </span>
 
                 <div>
@@ -3584,7 +3811,7 @@ function App() {
                   </small>
                 </div>
 
-                <b>→</b>
+                <Icon name="chevron" size={16} />
               </button>
 
             </div>
@@ -3646,11 +3873,13 @@ function App() {
     <div className="empty-module">
 
       <div className="empty-icon">
-        {
-          menuItems.find(
-            item => item.id === active
-          )?.icon
-        }
+        <Icon
+          name={
+            menuItems.find(item => item.id === active)?.icon ||
+            "settings"
+          }
+          size={30}
+        />
       </div>
 
       <span className="eyebrow">
@@ -3735,7 +3964,7 @@ function App() {
 
           {!systemStatus ? (
             <div className="system-start-card">
-              <div className="system-start-icon">⌘</div>
+              <div className="system-start-icon"><Icon name="system" size={28} /></div>
 
               <h2>Check System Protection</h2>
 
@@ -3757,7 +3986,7 @@ function App() {
               {systemStatus?.status === "protected" ? (
                 <div className="system-protection-banner protected">
                   <div className="system-protection-icon">
-                    ✓
+                    <Icon name="check" />
                   </div>
 
                   <div className="system-protection-content">
@@ -3788,7 +4017,7 @@ function App() {
                 <div className="system-security-card">
                   <div className="system-card-top">
                     <div className="system-card-icon defender">
-                      🛡
+                      <Icon name="privacy" size={23} />
                     </div>
 
                     <span
@@ -3852,7 +4081,7 @@ function App() {
                 <div className="system-security-card">
                   <div className="system-card-top">
                     <div className="system-card-icon firewall">
-                      ◈
+                      <Icon name="network" size={23} />
                     </div>
 
                     <span
@@ -3947,7 +4176,7 @@ function App() {
 
   return (
     <div
-      className={`app ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}
+      className={`app app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}
     >
 
       {mobileSidebarOpen && (
@@ -3959,144 +4188,19 @@ function App() {
         />
       )}
 
-      <aside
-        id="app-sidebar"
-        className={`sidebar ${sidebarCollapsed ? "collapsed" : ""} ${
-          mobileSidebarOpen ? "mobile-open" : ""
-        }`}
-      >
+      <Sidebar
+        active={active}
+        setActive={setActive}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(collapsed => !collapsed)}
+        mobileOpen={mobileSidebarOpen}
+        onCloseMobile={() => setMobileSidebarOpen(false)}
+        displayName={displayName}
+        displayEmail={displayEmail}
+        avatarText={avatarText}
+      />
 
-        <div className="brand">
-
-          <div className="brand-mark">
-            <span>⬡</span>
-          </div>
-
-          <div>
-            <strong>
-              CyberShield
-            </strong>
-
-            <small>
-              AI SECURITY
-            </small>
-          </div>
-
-          <button
-            className="sidebar-toggle"
-            type="button"
-            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-expanded={!sidebarCollapsed}
-            aria-controls="app-sidebar"
-            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            onClick={() => setSidebarCollapsed(collapsed => !collapsed)}
-          >
-            {sidebarCollapsed ? "›" : "‹"}
-          </button>
-
-        </div>
-
-        <div className="sidebar-section">
-
-          <span className="sidebar-label">
-            MAIN MENU
-          </span>
-
-          {menuItems.map(item => (
-            <button
-              key={item.id}
-              className={`nav-item ${
-                active === item.id
-                  ? "active"
-                  : ""
-              }`}
-              aria-label={item.label}
-              title={item.label}
-              onClick={() => {
-                setActive(item.id);
-                setMobileSidebarOpen(false);
-              }}
-            >
-              <span className="nav-icon">
-                {item.icon}
-              </span>
-
-              <span>
-                {item.label}
-              </span>
-
-              {active === item.id && (
-                <span className="nav-arrow">
-                  ›
-                </span>
-              )}
-            </button>
-          ))}
-
-        </div>
-
-        <div className="sidebar-bottom">
-
-          <div className="security-mini" title="System Protected">
-
-            <div className="mini-shield">
-              ⬡
-            </div>
-
-            <div>
-              <strong>
-                System Protected
-              </strong>
-
-              <span>
-                All systems operational
-              </span>
-            </div>
-
-            <i />
-          </div>
-
-          <button
-            className="settings-button"
-            type="button"
-            aria-label="Settings"
-            title="Settings"
-            onClick={() => {
-              setActive("settings");
-              setMobileSidebarOpen(false);
-            }}
-          >
-            ⚙
-            <span>
-              Settings
-            </span>
-          </button>
-
-          <div
-            className="user-card"
-            title={`${displayName} - ${displayEmail}`}
-          >
-
-            <div className="avatar">
-              {avatarText}
-            </div>
-
-            <div>
-              <strong>
-                {displayName}
-              </strong>
-
-              <span>
-                {displayEmail}
-              </span>
-            </div>
-
-          </div>
-
-        </div>
-      </aside>
-
-      <main className="main">
+      <main className={`main ${active === "dashboard" ? "dashboard-frame" : ""}`}>
 
         <header className="topbar">
 
@@ -4109,38 +4213,66 @@ function App() {
             title={mobileSidebarOpen ? "Close navigation menu" : "Open navigation menu"}
             onClick={() => setMobileSidebarOpen(open => !open)}
           >
-            ☰
+            <Icon name={mobileSidebarOpen ? "close" : "menu"} size={18} />
           </button>
 
           <div className="mobile-brand">
-            <span>⬡</span>
-            CyberShield
+            <span className="mobile-brand-mark"><BrandMark /></span>
+            <strong className="brand-wordmark">
+              <span className="brand-word-cyber">Cyber</span>
+              <span className="brand-word-shield">Shield</span>
+            </strong>
           </div>
 
-          <div className="topbar-status">
-            <span className="status-dot" />
-            Security systems operational
-          </div>
+          <form
+            className="topbar-search"
+            role="search"
+            onSubmit={event => {
+              event.preventDefault();
+              setActive("reports");
+              setMobileSidebarOpen(false);
+            }}
+          >
+            <Icon name="search" size={17} />
+            <input
+              aria-label="Search scans and reports"
+              placeholder="Search scans, reports"
+              value={reportSearch}
+              onChange={event => setReportSearch(event.target.value)}
+            />
+            {reportSearch && (
+              <button
+                type="button"
+                className="search-clear"
+                aria-label="Clear search"
+                onClick={() => setReportSearch("")}
+              >
+                <Icon name="close" size={15} />
+              </button>
+            )}
+          </form>
 
           <div className="topbar-actions">
 
-            <button title="Notifications">
-              ♢
+            <button type="button" aria-label="Notifications" title="Notifications">
+              <Icon name="bell" size={16} />
             </button>
 
             <button
+              type="button"
+              aria-label="Open settings"
               title="Settings"
               onClick={() =>
                 setActive("settings")
               }
             >
-              ⚙
+              <Icon name="settings" size={16} />
             </button>
 
           </div>
         </header>
 
-        <section className="content">
+        <section className={`content ${active === "dashboard" ? "dashboard-content" : ""}`}>
           {renderPage()}
         </section>
 
@@ -4152,13 +4284,14 @@ function App() {
 function ScanTable({
   scans,
   statusClass,
-  formatDate
+  formatDate,
+  compact = false
 }) {
   if (!scans.length) {
     return (
       <div className="no-scans">
 
-        <span>⌁</span>
+        <span><Icon name="scan" size={24} /></span>
 
         <strong>
           No scans yet
@@ -4169,6 +4302,40 @@ function ScanTable({
           check and your activity will appear here.
         </p>
 
+      </div>
+    );
+  }
+
+  if (compact) {
+    const getIconName = scanType => {
+      const type = String(scanType || "").toLowerCase();
+      if (type.includes("url")) return "url";
+      if (type.includes("email")) return "email";
+      if (type.includes("password")) return "password";
+      if (type.includes("privacy")) return "privacy";
+      return "file";
+    };
+
+    return (
+      <div className="activity-list">
+        {scans.map(scan => (
+          <div className="activity-row" key={scan.id}>
+            <span className="activity-type-icon">
+              <Icon name={getIconName(scan.scan_type)} size={16} />
+            </span>
+            <div className="activity-target">
+              <strong title={scan.target}>{scan.target || scan.scan_type}</strong>
+              <span>
+                {scan.scan_type} scan
+                <span aria-hidden="true"> · </span>
+                {formatDate(scan.created_at)}
+              </span>
+            </div>
+            <span className={`activity-status ${statusClass(scan.status)}`}>
+              {scan.status}
+            </span>
+          </div>
+        ))}
       </div>
     );
   }
@@ -4196,23 +4363,26 @@ function ScanTable({
               <td>
 
                 <span className="type-badge">
-
-                  {scan.scan_type === "url"
-                    ? "↗"
-                    : scan.scan_type ===
-                      "email"
-                    ? "✉"
-                    : scan.scan_type ===
-                      "password"
-                    ? "◉"
-                    : "▣"}
-
+                  <Icon
+                    name={
+                      String(scan.scan_type || "").toLowerCase().includes("url")
+                        ? "url"
+                        : String(scan.scan_type || "").toLowerCase().includes("email")
+                        ? "email"
+                        : String(scan.scan_type || "").toLowerCase().includes("password")
+                        ? "password"
+                        : String(scan.scan_type || "").toLowerCase().includes("privacy")
+                        ? "privacy"
+                        : "file"
+                    }
+                    size={13}
+                  />
                   {scan.scan_type}
                 </span>
 
               </td>
 
-              <td className="target-cell">
+              <td className="target-cell" title={scan.target}>
                 {scan.target}
               </td>
 

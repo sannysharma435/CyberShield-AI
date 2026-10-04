@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Icon from "./Icon";
+import BrandMark from "./BrandMark";
 import "./Signup.css";
 
 function Signup() {
@@ -91,57 +93,6 @@ function Signup() {
     navigate("/");
   };
 
-  const EyeIcon = ({ hidden }) => {
-    if (hidden) {
-      return (
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          aria-hidden="true"
-        >
-          <path
-            d="M3 3l18 18"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-          />
-
-          <path
-            d="M10.6 6.2C11.05 6.07 11.52 6 12 6c6 0 9.5 6 9.5 6a17.8 17.8 0 0 1-3.2 3.75M6.4 6.85C4.15 8.18 2.5 12 2.5 12s3.5 6 9.5 6c1.2 0 2.3-.23 3.28-.6"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      );
-    }
-
-    return (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        aria-hidden="true"
-      >
-        <path
-          d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        <circle
-          cx="12"
-          cy="12"
-          r="2.7"
-          stroke="currentColor"
-          strokeWidth="1.8"
-        />
-      </svg>
-    );
-  };
-
   return (
     <div className="signup-page">
 
@@ -161,16 +112,17 @@ function Signup() {
             <div className="signup-brand">
 
               <div className="signup-brand-logo">
-                ⬡
+                  <BrandMark />
               </div>
 
               <div>
-                <strong>
-                  CyberShield
+                <strong className="brand-wordmark">
+                  <span className="brand-word-cyber">Cyber</span>
+                  <span className="brand-word-shield">Shield</span>
                 </strong>
 
                 <span>
-                  AI SECURITY PLATFORM
+                  AI SECURITY
                 </span>
               </div>
 
@@ -200,7 +152,7 @@ function Signup() {
                 <div className="signup-point">
 
                   <div className="signup-point-icon">
-                    ✓
+                    <Icon name="check" size={14} />
                   </div>
 
                   <div>
@@ -218,7 +170,7 @@ function Signup() {
                 <div className="signup-point">
 
                   <div className="signup-point-icon">
-                    ✓
+                    <Icon name="check" size={14} />
                   </div>
 
                   <div>
@@ -236,7 +188,7 @@ function Signup() {
                 <div className="signup-point">
 
                   <div className="signup-point-icon">
-                    ✓
+                    <Icon name="check" size={14} />
                   </div>
 
                   <div>
@@ -267,7 +219,7 @@ function Signup() {
 
           <div className="signup-shield">
             <div></div>
-            <span>⬡</span>
+            <Icon name="privacy" size={20} />
           </div>
 
         </div>
@@ -279,16 +231,17 @@ function Signup() {
           <div className="signup-mobile-brand">
 
             <div className="signup-mobile-logo">
-              ⬡
+              <BrandMark />
             </div>
 
             <div>
-              <strong>
-                CyberShield
+              <strong className="brand-wordmark">
+                <span className="brand-word-cyber">Cyber</span>
+                <span className="brand-word-shield">Shield</span>
               </strong>
 
               <span>
-                AI SECURITY PLATFORM
+                AI SECURITY
               </span>
             </div>
 
@@ -319,17 +272,18 @@ function Signup() {
 
               <div className="signup-field">
 
-                <label>
+                <label htmlFor="signup-name">
                   Full Name
                 </label>
 
                 <div className="signup-input-wrapper">
 
                   <span className="signup-input-icon">
-                    ◉
+                    <Icon name="user" size={16} />
                   </span>
 
                   <input
+                    id="signup-name"
                     type="text"
                     placeholder="Enter your name"
                     value={name}
@@ -347,17 +301,18 @@ function Signup() {
 
               <div className="signup-field">
 
-                <label>
+                <label htmlFor="signup-email">
                   Email Address
                 </label>
 
                 <div className="signup-input-wrapper">
 
                   <span className="signup-input-icon">
-                    ✉
+                    <Icon name="email" size={16} />
                   </span>
 
                   <input
+                    id="signup-email"
                     type="email"
                     placeholder="you@example.com"
                     value={email}
@@ -375,17 +330,18 @@ function Signup() {
 
               <div className="signup-field">
 
-                <label>
+                <label htmlFor="signup-password">
                   Password
                 </label>
 
                 <div className="signup-input-wrapper">
 
                   <span className="signup-input-icon">
-                    ●
+                    <Icon name="password" size={16} />
                   </span>
 
                   <input
+                    id="signup-password"
                     type={
                       showPassword
                         ? "text"
@@ -411,9 +367,7 @@ function Signup() {
                         : "Show password"
                     }
                   >
-                    <EyeIcon
-                      hidden={!showPassword}
-                    />
+                    <Icon name={showPassword ? "eye" : "eyeOff"} size={17} />
                   </button>
 
                 </div>
@@ -424,17 +378,18 @@ function Signup() {
 
               <div className="signup-field">
 
-                <label>
+                <label htmlFor="signup-confirm-password">
                   Confirm Password
                 </label>
 
                 <div className="signup-input-wrapper">
 
                   <span className="signup-input-icon">
-                    ●
+                    <Icon name="password" size={16} />
                   </span>
 
                   <input
+                    id="signup-confirm-password"
                     type={
                       showConfirmPassword
                         ? "text"
@@ -464,8 +419,9 @@ function Signup() {
                         : "Show password"
                     }
                   >
-                    <EyeIcon
-                      hidden={!showConfirmPassword}
+                    <Icon
+                      name={showConfirmPassword ? "eye" : "eyeOff"}
+                      size={17}
                     />
                   </button>
 
@@ -508,7 +464,7 @@ function Signup() {
                 </span>
 
                 <b>
-                  →
+                  <Icon name="chevron" size={16} />
                 </b>
               </button>
 
@@ -543,7 +499,7 @@ function Signup() {
           <div className="signup-security">
 
             <span>
-              ⬡
+              <Icon name="privacy" size={16} />
             </span>
 
             Secure CyberShield Session

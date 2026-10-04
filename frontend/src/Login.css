@@ -169,6 +169,55 @@
   letter-spacing: 1.5px;
 }
 
+.visual-logo,
+.mobile-logo {
+  border: 1px solid rgba(145, 93, 255, 0.58);
+  color: #d8caff;
+  background: #17133a;
+  box-shadow: none;
+}
+
+.visual-logo svg,
+.mobile-logo svg {
+  width: 30px;
+  height: 30px;
+}
+
+.visual-brand .brand-wordmark,
+.mobile-brand .brand-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+  white-space: nowrap;
+}
+
+.visual-brand .brand-wordmark span,
+.mobile-brand .brand-wordmark span {
+  display: inline;
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+}
+
+.visual-brand .brand-wordmark .brand-word-cyber,
+.mobile-brand .brand-wordmark .brand-word-cyber {
+  color: #f4f1ff;
+}
+
+.visual-brand .brand-wordmark .brand-word-shield,
+.mobile-brand .brand-wordmark .brand-word-shield {
+  display: inline;
+  margin: 0;
+  color: #a887ff;
+  background: linear-gradient(100deg, #8b63ff 0%, #c29cff 100%);
+  background-clip: text;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  -webkit-text-fill-color: transparent;
+}
+
 .visual-main {
   margin-top: auto;
   margin-bottom: auto;
@@ -748,6 +797,16 @@
     font-size: 20px;
   }
 
+  .mobile-logo {
+    border: 1px solid rgba(145, 93, 255, 0.58);
+    background: #17133a;
+  }
+
+  .mobile-logo svg {
+    width: 30px;
+    height: 30px;
+  }
+
   .mobile-brand strong {
     display: block;
     color: #eef1f8;
@@ -761,12 +820,53 @@
     font-size: 8px;
     letter-spacing: 1.4px;
   }
+
+  .mobile-brand .brand-wordmark span {
+    display: inline;
+    margin: 0;
+    font-size: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+  }
+
+  .mobile-brand .brand-wordmark .brand-word-shield {
+    display: inline;
+    margin: 0;
+    color: #a887ff;
+    font-size: inherit;
+    letter-spacing: inherit;
+    -webkit-text-fill-color: transparent;
+  }
 }
 
 @media (max-width: 500px) {
   .login-page {
     padding: 10px;
   }
+}
+
+.visual-brand,
+.mobile-brand {
+  gap: 2px;
+}
+
+.visual-logo,
+.mobile-logo {
+  width: 34px;
+  height: 40px;
+  flex: 0 0 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.visual-logo svg,
+.mobile-logo svg {
+  width: 32px;
+  height: 32px;
+  filter: drop-shadow(0 1px 3px rgba(126, 85, 255, 0.24));
 
   .login-shell {
     border-radius: 18px;
