@@ -24,17 +24,28 @@ function Sidebar({
       }`}
     >
       <div className="brand">
-        <div className="brand-mark">
-          <BrandMark />
-        </div>
+        <button
+          className="brand-home"
+          type="button"
+          aria-label="CyberShield AI Dashboard"
+          title="Go to Dashboard"
+          onClick={() => {
+            setActive("dashboard");
+            onCloseMobile();
+          }}
+        >
+          <span className="brand-mark">
+            <BrandMark />
+          </span>
 
-        <div>
-          <strong className="brand-wordmark">
-            <span className="brand-word-cyber">Cyber</span>
-            <span className="brand-word-shield">Shield</span>
-          </strong>
-          <small>AI SECURITY</small>
-        </div>
+          <span className="brand-home-copy">
+            <strong className="brand-wordmark">
+              <span className="brand-word-cyber">Cyber</span>
+              <span className="brand-word-shield">Shield</span>
+            </strong>
+            <small>AI SECURITY</small>
+          </span>
+        </button>
 
         <button
           className="sidebar-toggle"

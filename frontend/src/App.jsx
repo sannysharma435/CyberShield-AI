@@ -4555,13 +4555,19 @@ function App() {
             <Icon name={mobileSidebarOpen ? "close" : "menu"} size={18} />
           </button>
 
-          <div className="mobile-brand">
+          <button
+            className="mobile-brand"
+            type="button"
+            aria-label="CyberShield AI Dashboard"
+            title="Go to Dashboard"
+            onClick={() => setActive("dashboard")}
+          >
             <span className="mobile-brand-mark"><BrandMark /></span>
             <strong className="brand-wordmark">
               <span className="brand-word-cyber">Cyber</span>
               <span className="brand-word-shield">Shield</span>
             </strong>
-          </div>
+          </button>
 
           <form
             className="topbar-search"
